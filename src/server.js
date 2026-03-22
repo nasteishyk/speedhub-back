@@ -10,6 +10,7 @@ import swaggerUi from 'swagger-ui-express';
 import { connectMongoDB } from './config/db.js';
 import questionsRoutes from './routes/questions.js';
 import usersRoutes from './routes/users.js';
+import reviewRoutes from './routes/reviews.js';
 
 dotenv.config();
 
@@ -77,6 +78,7 @@ app.use(
 );
 app.use('/api/questions', questionsRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
