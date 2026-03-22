@@ -46,10 +46,8 @@ const swaggerOptions = {
       description: 'Документація API для SpeedHub з підтримкою JWT-авторизації',
     },
     servers: [
-      { url: 'http://localhost:5000', description: 'Local server' },
       {
         url: 'https://speedhub-6fam.onrender.com',
-        description: 'Production server',
       },
     ],
     components: {
