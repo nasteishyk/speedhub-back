@@ -1,0 +1,100 @@
+import User from '../models/user.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { registerSchema, loginSchema } from '../validations/userValidation.js';
+
+export const register = async (req, res) => {
+  try {
+    const { error } = registerSchema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const { email, password, name, surname } = req.body;
+    const candidate = await User.findOne({ email });
+    if (candidate)
+      return res
+        .status(400)
+        .json({ error: 'User with this email already exists' });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    await User.create({ email, password: hashedPassword, name, surname });
+
+    res.status(201).json({ message: 'User registered successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+export const login = async (req, res) => {
+  try {
+    const { error } = loginSchema.validate(req.body);
+    if (error) return res.status(400).json({ error: error.details[0].message });
+
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: '7d',
+    });
+
+    res.json({
+      token,
+      userId: user._id,
+      name: user.name,
+      surname: user.surname,
+      subscriptionType: user.subscriptionType,
+      statistics: user.statistics,
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};
+
+export const updateStats = async (req, res) => {
+  try {
+    const { type, data } = req.body;
+
+    if (!data || typeof data.correctAnswers === 'undefined') {
+      return res.status(400).json({ error: 'Missing test results data' });
+    }
+
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    let isPassed = false;
+
+    if (type === 'unit') {
+      const total = data.totalQuestions || 20;
+      const passPercentage = (data.correctAnswers / total) * 100;
+      isPassed = passPercentage >= 80;
+
+      user.statistics.unitsPassed.push({
+        ...data,
+        isPassed,
+        totalQuestions: total,
+      });
+    } else if (type === 'random') {
+      // Для іспиту ПДР - максимум 2 помилки
+      isPassed = data.incorrectAnswers <= 2;
+
+      user.statistics.randomTests.push({ ...data, isPassed });
+    } else {
+      return res.status(400).json({ error: 'Invalid statistics type' });
+    }
+
+    await user.save();
+
+    res.json({
+      message: 'Statistics updated successfully',
+      isPassed,
+      latestResult: isPassed ? 'Passed' : 'Failed',
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error: ' + err.message });
+  }
+};

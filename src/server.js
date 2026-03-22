@@ -1,66 +1,85 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import path from "path";
-import helmet from "helmet"; // Захист заголовків
-import rateLimit from "express-rate-limit"; // Захист від спаму
-import swaggerJsDoc from "swagger-jsdoc";
-import swaggerUi from "swagger-ui-express";
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import path from 'path';
+import helmet from 'helmet'; // Захист заголовків
+import rateLimit from 'express-rate-limit'; // Захист від спаму
+import swaggerJsDoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
 
-import { connectMongoDB } from "./config/db.js";
-import questionsRoutes from "./routes/questions.js";
+import { connectMongoDB } from './config/db.js';
+import questionsRoutes from './routes/questions.js';
+import usersRoutes from './routes/users.js';
 
 dotenv.config();
 
 const app = express();
 
-// 1. ПІДКЛЮЧЕННЯ ДО БД
 connectMongoDB();
 
-// 2. ЗАХИСТ (Security Middlewares)
-app.use(helmet()); // Встановлює безпечні HTTP-заголовки
+app.use(helmet());
 
-// Обмеження кількості запитів (захист від DDoS/спаму)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 хвилин
-  max: 100, // ліміт 100 запитів з однієї IP-адреси
-  message: "Забагато запитів з цього IP, спробуйте пізніше."
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: 'Забагато запитів з цього IP, спробуйте пізніше.',
 });
-app.use("/api/", limiter);
+app.use('/api/', limiter);
 
-// Налаштування CORS (дозволяємо запити лише з твого фронтенда після деплою)
 const corsOptions = {
   origin: [
-    "http://localhost:5173", // для розробки
-    "https://speedhub-neon.vercel.app" // на Vercel
+    'http://localhost:5173', // для розробки
+    'https://speedhub-neon.vercel.app', // на Vercel
   ],
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
 
 app.use(express.json());
 
-// 3. SWAGGER КОНФІГУРАЦІЯ
 const swaggerOptions = {
   definition: {
-    openapi: "3.0.0",
+    openapi: '3.0.0',
     info: {
-      title: "SpeedHub API",
-      version: "1.0.0",
-      description: "Документація API для SpeedHub з вбудованим захистом",
+      title: 'SpeedHub API',
+      version: '1.0.0',
+      description: 'Документація API для SpeedHub з підтримкою JWT-авторизації',
     },
-    servers: [{ url: "https://speedhub-6fam.onrender.com" }],
+    servers: [
+      { url: 'http://localhost:5000', description: 'Local server' },
+      {
+        url: 'https://speedhub-6fam.onrender.com',
+        description: 'Production server',
+      },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [],
+      },
+    ],
   },
-  apis: ["./src/routes/*.js"],
+  apis: ['./src/routes/*.js'],
 };
+
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// 4. СТАТИКА ТА РОУТИ
-app.use("/images", express.static(path.join(process.cwd(), "src/public/images/testsImg")));
-app.use("/api/questions", questionsRoutes);
+app.use(
+  '/images',
+  express.static(path.join(process.cwd(), 'src/public/images/testsImg')),
+);
+app.use('/api/questions', questionsRoutes);
+app.use('/api/users', usersRoutes);
 
-// ПОРТ
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
