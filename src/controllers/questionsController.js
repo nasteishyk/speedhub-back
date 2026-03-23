@@ -1,14 +1,39 @@
 import Question from '../models/question.js';
 
+const formatQuestionsWithImages = (req, questions) => {
+  const baseUrl = `${req.protocol}://${req.get('host')}/images/`;
+
+  return questions.map((q) => {
+    const doc = q.toObject ? q.toObject() : q;
+
+    if (doc.image && Array.isArray(doc.image)) {
+      doc.image = doc.image.map((imgName) => `${baseUrl}${imgName}`);
+    } else if (doc.image && typeof doc.image === 'string') {
+      doc.image = `${baseUrl}${doc.image}`;
+    }
+
+    return doc;
+  });
+};
+
 export const getAllQuestions = async (req, res) => {
-  const questions = await Question.find();
-  res.json(questions);
+  try {
+    const questions = await Question.find();
+    const formatted = formatQuestionsWithImages(req, questions);
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: 'Помилка сервера: ' + err.message });
+  }
 };
 
 export const getRandomTest = async (req, res) => {
-  const questions = await Question.aggregate([{ $sample: { size: 20 } }]);
-
-  res.json(questions);
+  try {
+    const questions = await Question.aggregate([{ $sample: { size: 20 } }]);
+    const formatted = formatQuestionsWithImages(req, questions);
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: 'Помилка сервера: ' + err.message });
+  }
 };
 
 export const getQuestionsByUnit = async (req, res) => {
@@ -29,19 +54,8 @@ export const getQuestionsByUnit = async (req, res) => {
       return res.status(404).json({ message: `Питання не знайдені` });
     }
 
-    const baseUrl = `${req.protocol}://${req.get('host')}/images/`;
-
-    const questionsWithImages = questions.map((q) => {
-      const doc = q.toObject();
-
-      if (doc.image && Array.isArray(doc.image)) {
-        doc.image = doc.image.map(imgName => `${baseUrl}${imgName}`);
-      }
-
-      return doc;
-    });
-    res.json(questionsWithImages);
-    
+    const formatted = formatQuestionsWithImages(req, questions);
+    res.json(formatted);
   } catch (err) {
     res.status(500).json({ error: 'Помилка сервера: ' + err.message });
   }

@@ -63,7 +63,7 @@ const swaggerOptions = {
       version: '1.0.0',
       description: 'API для SpeedHub',
     },
-    servers: [{ url: '/' }],
+    servers: [{ url: 'https://speedhub-6fam.onrender.com' }],
     components: {
       securitySchemes: {
         bearerAuth: {
