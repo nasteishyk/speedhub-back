@@ -1,6 +1,9 @@
+import dotenv from 'dotenv';
+// 1. dotenv.config() МАЄ БУТИ ПЕРШИМ РЯДКОМ!
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -8,62 +11,57 @@ import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 
 import { connectMongoDB } from './config/db.js';
+
+// Тільки після dotenv.config() імпортуємо роути
 import questionsRoutes from './routes/questions.js';
 import usersRoutes from './routes/users.js';
 import reviewRoutes from './routes/reviews.js';
 
-dotenv.config();
-
 const app = express();
 
-// 1. ПАРСЕРИ (Мають бути на початку)
+// ПАРСЕРИ (теж на початку)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 2. ПІДКЛЮЧЕННЯ БАЗИ
 connectMongoDB();
 
-// 3. БЕЗПЕКА (Helmet налаштований так, щоб не блокувати Swagger)
+// HELMET (без блокування Swagger)
 app.use(
   helmet({
-    contentSecurityPolicy: false, // Дозволяє Swagger коректно відображатися
+    contentSecurityPolicy: false,
   }),
 );
 
-// 4. LIMITER (Вимикаємо для адмінських запитів або збільшуємо ліміт для тестів)
+// LIMITER
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 500, // Збільшив ліміт до 500, щоб не було 403 при тестах
+  max: 500,
   message: { error: 'Забагато запитів з цього IP, спробуйте пізніше.' },
 });
 app.use('/api/', limiter);
 
-// 5. CORS (Додав посилання на сам Render, щоб API могло звертатися до себе)
+// CORS (з credentials: true для роботи з куками)
 const corsOptions = {
   origin: [
     'http://localhost:3000',
     'https://speedhub-neon.vercel.app',
     'https://speedhub-6fam.onrender.com',
   ],
+  credentials: true, // ВАЖЛИВО: для авторизації
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
 
-// 6. SWAGGER (Динамічні сервери)
+// SWAGGER
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
       title: 'SpeedHub API',
       version: '1.0.0',
-      description: 'Документація API для SpeedHub з підтримкою JWT-авторизації',
+      description: 'API для SpeedHub',
     },
-    servers: [
-      {
-        url: '/', // Магія: автоматично бере поточний домен (localhost або render)
-        description: 'Current Server',
-      },
-    ],
+    servers: [{ url: '/' }],
     components: {
       securitySchemes: {
         bearerAuth: {
@@ -81,7 +79,7 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// 7. СТАТИКА ТА РОУТИ
+// СТАТИКА ТА РОУТИ
 app.use(
   '/images',
   express.static(path.join(process.cwd(), 'src/public/images/testsImg')),
