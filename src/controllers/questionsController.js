@@ -9,6 +9,7 @@ const formatQuestionsWithImages = (req, questions) => {
     if (doc.image && Array.isArray(doc.image)) {
       doc.image = doc.image.map((imgName) => `${baseUrl}${imgName}`);
     } else if (doc.image && typeof doc.image === 'string') {
+      // Про всяк випадок, якщо картинка записана рядком, а не масивом
       doc.image = `${baseUrl}${doc.image}`;
     }
 
