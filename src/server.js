@@ -29,7 +29,7 @@ app.use('/api/', limiter);
 
 const corsOptions = {
   origin: [
-    'http://localhost:5173', // для розробки
+    'http://localhost:3000', // для розробки
     'https://speedhub-neon.vercel.app', // на Vercel
   ],
   optionsSuccessStatus: 200,
