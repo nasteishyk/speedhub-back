@@ -19,6 +19,8 @@ import reviewRoutes from './routes/reviews.js';
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // ПАРСЕРИ (теж на початку)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
