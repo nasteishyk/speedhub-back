@@ -98,3 +98,19 @@ export const updateStats = async (req, res) => {
     res.status(500).json({ error: 'Server error: ' + err.message });
   }
 };
+
+export const getAllUsers = async (req, res) => {
+  try {
+    const adminUser = await User.findById(req.user.id);
+
+    // Тільки ти маєш доступ
+    if (adminUser.email !== 'root@admin.com') {
+      return res.status(403).json({ error: 'Access denied. Admins only.' });
+    }
+
+    const users = await User.find().select('-password');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

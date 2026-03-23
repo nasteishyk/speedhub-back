@@ -6,6 +6,11 @@ const userSchema = new mongoose.Schema(
     surname: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
     subscriptionType: {
       type: String,
       enum: ['free', 'premium'],
