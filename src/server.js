@@ -1,5 +1,4 @@
 import dotenv from 'dotenv';
-// 1. dotenv.config() МАЄ БУТИ ПЕРШИМ РЯДКОМ!
 dotenv.config();
 
 import express from 'express';
@@ -39,15 +38,26 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://speedhub-neon.vercel.app',
+  'https://speedhub-6fam.onrender.com',
+];
+
 const corsOptions = {
-  origin: [
-    'http://localhost:3000',
-    'https://speedhub-neon.vercel.app',
-    'https://speedhub-6fam.onrender.com',
-  ],
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
   optionsSuccessStatus: 200,
 };
+
 app.use(cors(corsOptions));
 
 const swaggerOptions = {
