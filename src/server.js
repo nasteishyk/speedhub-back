@@ -12,29 +12,26 @@ import swaggerUi from 'swagger-ui-express';
 
 import { connectMongoDB } from './config/db.js';
 
-// Тільки після dotenv.config() імпортуємо роути
 import questionsRoutes from './routes/questions.js';
 import usersRoutes from './routes/users.js';
 import reviewRoutes from './routes/reviews.js';
+import adminRoutes from './routes/admin.js';
 
 const app = express();
 
 app.set('trust proxy', 1);
 
-// ПАРСЕРИ (теж на початку)
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 connectMongoDB();
 
-// HELMET (без блокування Swagger)
 app.use(
   helmet({
     contentSecurityPolicy: false,
   }),
 );
 
-// LIMITER
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 500,
@@ -42,19 +39,17 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// CORS (з credentials: true для роботи з куками)
 const corsOptions = {
   origin: [
     'http://localhost:3000',
     'https://speedhub-neon.vercel.app',
     'https://speedhub-6fam.onrender.com',
   ],
-  credentials: true, // ВАЖЛИВО: для авторизації
+  credentials: true,
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
 
-// SWAGGER
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -81,7 +76,6 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-// СТАТИКА ТА РОУТИ
 app.use(
   '/images',
   express.static(path.join(process.cwd(), 'src/public/images/testsImg')),
@@ -90,6 +84,7 @@ app.use(
 app.use('/api/questions', questionsRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin', adminRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
