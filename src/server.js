@@ -5,6 +5,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
@@ -17,6 +18,8 @@ import reviewRoutes from './routes/reviews.js';
 import adminRoutes from './routes/admin.js';
 
 const app = express();
+
+app.use(cookieParser());
 
 app.set('trust proxy', 1);
 
