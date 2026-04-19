@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, updateStats, getAllUsers } from '../controllers/userController.js';
+import { register, login, updateStats } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -89,19 +89,5 @@ router.post('/login', login);
  *                     type: number
  */
 router.post('/stats', protect, updateStats);
-
-/**
- * @openapi
- * /api/users:
- *   get:
- *     summary: Get all users list (Auth required)
- *     tags: [Users]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: Successfully retrieved users list
- */
-router.get('/', protect, getAllUsers);
 
 export default router;

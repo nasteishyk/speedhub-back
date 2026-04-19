@@ -101,24 +101,3 @@ export const updateStats = async (req, res) => {
     res.status(500).json({ error: 'Помилка сервера: ' + err.message });
   }
 };
-
-export const getAllUsers = async (req, res) => {
-  try {
-    // req.user заповнюється в authMiddleware (protect)
-    const adminUser = await User.findById(req.user.id);
-
-    if (!adminUser) {
-      return res.status(404).json({ error: 'Адміністратора не знайдено' });
-    }
-
-    // Доступ дозволено, якщо роль 'admin' АБО email 'root@admin.com'
-    if (adminUser.role !== 'admin' && adminUser.email !== 'root@admin.com') {
-      return res.status(403).json({ error: 'Доступ заборонено. Тільки для адміністраторів.' });
-    }
-
-    const users = await User.find().select('-password');
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
