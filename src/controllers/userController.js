@@ -17,7 +17,13 @@ export const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await User.create({ email, password: hashedPassword, name, surname, role: 'user' });
+    await User.create({
+      email,
+      password: hashedPassword,
+      name,
+      surname,
+      role: 'user',
+    });
 
     res.status(201).json({ message: 'Користувача успішно зареєстровано' });
   } catch (err) {
@@ -40,7 +46,7 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { id: user._id, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: '7d' }
+      { expiresIn: '7d' },
     );
 
     res.json({
@@ -69,7 +75,8 @@ export const updateStats = async (req, res) => {
     const userId = req.user.id;
     const user = await User.findById(userId);
 
-    if (!user) return res.status(404).json({ error: 'Користувача не знайдено' });
+    if (!user)
+      return res.status(404).json({ error: 'Користувача не знайдено' });
 
     let isPassed = false;
 
@@ -77,13 +84,14 @@ export const updateStats = async (req, res) => {
       const total = data.totalQuestions || 20;
       isPassed = (data.correctAnswers / total) * 100 >= 80;
       user.statistics.unitsPassed.push({
-        unitId: data.unitId || "unknown",
+        unitId: data.unitId || 'unknown',
         correctAnswers: data.correctAnswers,
         incorrectAnswers: data.incorrectAnswers,
         totalQuestions: total,
         timeSpent: data.timeSpent || 0,
+        mistakes: data.mistakes || [],
         isPassed,
-        date: new Date()
+        date: new Date(),
       });
     } else if (type === 'random' || type === 'exam') {
       isPassed = data.incorrectAnswers <= 2;
@@ -92,7 +100,8 @@ export const updateStats = async (req, res) => {
         total: data.totalQuestions || 20,
         incorrectAnswers: data.incorrectAnswers,
         timeSpent: data.timeSpent || 0,
-        date: new Date()
+        mistakes: data.mistakes || [],
+        date: new Date(),
       });
     } else {
       return res.status(400).json({ error: 'Невірний тип статистики' });
