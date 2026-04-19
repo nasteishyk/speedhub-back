@@ -2,42 +2,20 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.js';
 
 export const protect = async (req, res, next) => {
-  let token;
+  let token = req.headers.authorization?.split(' ')[1];
 
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
+  if (!token) return res.status(401).json({ error: 'Токен відсутній' });
 
-      // ДЕБАГ: у логах Render, чи не undefined
-      if (!process.env.JWT_SECRET) {
-        console.error('КРИТИЧНО: process.env.JWT_SECRET не знайдено!');
-      }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select('-password');
 
-      // Верифікація токена
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!req.user)
+      return res.status(401).json({ error: 'Користувача не знайдено' });
 
-      // Пошук користувача
-      req.user = await User.findById(decoded.id).select('-password');
-
-      if (!req.user) {
-        return res.status(401).json({ error: 'Користувача не знайдено' });
-      }
-
-      return next();
-    } catch (err) {
-      // Виводимо конкретну помилку в консоль Render
-      console.error('JWT Verification Error:', err.message);
-
-      return res
-        .status(401)
-        .json({ error: 'Не авторизовано, токен недійсний' });
-    }
-  }
-
-  if (!token) {
-    return res.status(401).json({ error: 'Немає токена, доступ заборонено' });
+    next();
+    // eslint-disable-next-line no-unused-vars
+  } catch (err) {
+    res.status(401).json({ error: 'Недійсний токен' });
   }
 };
