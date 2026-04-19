@@ -75,8 +75,17 @@ export const updateStats = async (req, res) => {
     const userId = req.user.id;
     const user = await User.findById(userId);
 
-    if (!user)
-      return res.status(404).json({ error: 'Користувача не знайдено' });
+    if (!user) return res.status(404).json({ error: 'Користувача не знайдено' });
+
+    const { resolvedMistakes } = data;
+    if (resolvedMistakes && Array.isArray(resolvedMistakes)) {
+      user.statistics.unitsPassed.forEach((unit) => {
+        unit.mistakes = unit.mistakes.filter(id => !resolvedMistakes.includes(id));
+      });
+      user.statistics.randomTests.forEach((test) => {
+        test.mistakes = test.mistakes.filter(id => !resolvedMistakes.includes(id));
+      });
+    }
 
     let isPassed = false;
 
@@ -93,7 +102,7 @@ export const updateStats = async (req, res) => {
         isPassed,
         date: new Date(),
       });
-    } else if (type === 'random' || type === 'exam') {
+    } else if (type === 'random' || type === 'exam' || type === 'review') {
       isPassed = data.incorrectAnswers <= 2;
       user.statistics.randomTests.push({
         score: data.correctAnswers,
