@@ -13,14 +13,15 @@ export const register = async (req, res) => {
     if (candidate)
       return res
         .status(400)
-        .json({ error: 'User with this email already exists' });
+        .json({ error: 'Користувач з таким email вже існує' });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await User.create({ email, password: hashedPassword, name, surname });
 
-    res.status(201).json({ message: 'User registered successfully' });
+    await User.create({ email, password: hashedPassword, name, surname, role: 'user' });
+
+    res.status(201).json({ message: 'Користувача успішно зареєстровано' });
   } catch (err) {
-    res.status(500).json({ error: 'Server error: ' + err.message });
+    res.status(500).json({ error: 'Помилка сервера: ' + err.message });
   }
 };
 
@@ -33,14 +34,17 @@ export const login = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Невірний email або пароль' });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '7d',
-    });
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
 
     res.json({
+      accessToken: token,
       token,
       userId: user._id,
       name: user.name,
@@ -50,7 +54,7 @@ export const login = async (req, res) => {
       statistics: user.statistics,
     });
   } catch (err) {
-    res.status(500).json({ error: 'Server error: ' + err.message });
+    res.status(500).json({ error: 'Помилка сервера: ' + err.message });
   }
 };
 
@@ -59,13 +63,13 @@ export const updateStats = async (req, res) => {
     const { type, data } = req.body;
 
     if (!data || typeof data.correctAnswers === 'undefined') {
-      return res.status(400).json({ error: 'Missing test results data' });
+      return res.status(400).json({ error: 'Відсутні дані результатів тесту' });
     }
 
     const userId = req.user.id;
     const user = await User.findById(userId);
 
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (!user) return res.status(404).json({ error: 'Користувача не знайдено' });
 
     let isPassed = false;
 
@@ -80,33 +84,36 @@ export const updateStats = async (req, res) => {
         totalQuestions: total,
       });
     } else if (type === 'random') {
-      // Для іспиту ПДР - максимум 2 помилки
       isPassed = data.incorrectAnswers <= 2;
-
       user.statistics.randomTests.push({ ...data, isPassed });
     } else {
-      return res.status(400).json({ error: 'Invalid statistics type' });
+      return res.status(400).json({ error: 'Невірний тип статистики' });
     }
 
     await user.save();
 
     res.json({
-      message: 'Statistics updated successfully',
+      message: 'Статистику оновлено',
       isPassed,
       latestResult: isPassed ? 'Passed' : 'Failed',
     });
   } catch (err) {
-    res.status(500).json({ error: 'Server error: ' + err.message });
+    res.status(500).json({ error: 'Помилка сервера: ' + err.message });
   }
 };
 
 export const getAllUsers = async (req, res) => {
   try {
+    // req.user заповнюється в authMiddleware (protect)
     const adminUser = await User.findById(req.user.id);
 
-    // Тільки ти маєш доступ
-    if (adminUser.email !== 'root@admin.com') {
-      return res.status(403).json({ error: 'Access denied. Admins only.' });
+    if (!adminUser) {
+      return res.status(404).json({ error: 'Адміністратора не знайдено' });
+    }
+
+    // Доступ дозволено, якщо роль 'admin' АБО email 'root@admin.com'
+    if (adminUser.role !== 'admin' && adminUser.email !== 'root@admin.com') {
+      return res.status(403).json({ error: 'Доступ заборонено. Тільки для адміністраторів.' });
     }
 
     const users = await User.find().select('-password');
