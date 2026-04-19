@@ -1,3 +1,4 @@
+import { uploadToCloudinary } from '../middleware/uploadMiddleware.js';
 import Question from '../models/question.js';
 
 const formatQuestionsWithImages = (req, questions) => {
@@ -7,12 +8,13 @@ const formatQuestionsWithImages = (req, questions) => {
     const doc = q.toObject ? q.toObject() : q;
 
     if (doc.image && Array.isArray(doc.image)) {
-      doc.image = doc.image.map((imgName) => `${baseUrl}${imgName}`);
-    } else if (doc.image && typeof doc.image === 'string') {
-      // Про всяк випадок, якщо картинка записана рядком, а не масивом
-      doc.image = `${baseUrl}${doc.image}`;
-    }
+      doc.image = doc.image.map((img) => {
 
+        if (img.startsWith('http')) return img;
+
+        return `${baseUrl}${img}`;
+      });
+    }
     return doc;
   });
 };
@@ -59,5 +61,52 @@ export const getQuestionsByUnit = async (req, res) => {
     res.json(formatted);
   } catch (err) {
     res.status(500).json({ error: 'Помилка сервера: ' + err.message });
+  }
+};
+
+export const updateQuestion = async (req, res) => {
+  try {
+    const { id } = req.params; // Це Mongo _id (ObjectId)
+    const { question, correct_option_id, options, existingImages, customId } = req.body;
+
+    const parsedOptions = JSON.parse(options); // Очікуємо ['Варіант 1', 'Варіант 2'...]
+    const parsedExisting = JSON.parse(existingImages || '[]');
+
+    const formattedOptions = parsedOptions.map((text, index) => ({
+      id: index + 1,
+      text: text
+    }));
+
+    let newImageUrls = [];
+    if (req.files && req.files.length > 0) {
+      const uploadPromises = req.files.map(file =>
+        uploadToCloudinary(file.buffer, 'speedhub_questions')
+      );
+      newImageUrls = await Promise.all(uploadPromises);
+    }
+
+    const finalImages = [...parsedExisting, ...newImageUrls];
+
+    const updatedQuestion = await Question.findByIdAndUpdate(
+      id,
+      {
+        id: customId,
+        question: question,
+        correct_option_id: Number(correct_option_id),
+        options: formattedOptions,
+        image: finalImages,
+      },
+      { new: true }
+    );
+
+    if (!updatedQuestion) return res.status(404).json({ error: 'Питання не знайдено' });
+
+
+    const formatted = formatQuestionsWithImages(req, [updatedQuestion]);
+    res.json(formatted[0]);
+
+  } catch (err) {
+    console.error('Update Error:', err);
+    res.status(500).json({ error: 'Помилка оновлення: ' + err.message });
   }
 };
