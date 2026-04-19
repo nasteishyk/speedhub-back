@@ -51,3 +51,25 @@ export const deleteReviewAdmin = async (req, res) => {
     res.status(500).json({ error: 'Delete error: ' + err.message });
   }
 };
+
+export const deleteUserAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (req.user && req.user._id.toString() === id) {
+      return res.status(400).json({ error: 'Ви не можете видалити власний профіль адміністратора' });
+    }
+
+    const user = await User.findById(id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'Користувача не знайдено' });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    res.json({ message: 'Користувача успішно видалено' });
+  } catch (err) {
+    res.status(500).json({ error: 'Помилка при видаленні користувача: ' + err.message });
+  }
+};

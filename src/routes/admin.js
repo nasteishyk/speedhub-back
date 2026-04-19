@@ -5,6 +5,7 @@ import {
   getAllUsersAdmin,
   updateUserAdmin,
   deleteReviewAdmin,
+  deleteUserAdmin,
 } from '../controllers/adminController.js';
 
 const router = express.Router();
@@ -33,6 +34,43 @@ const router = express.Router();
  *         description: Forbidden (Admin only)
  */
 router.get('/users', protect, isAdmin, getAllUsersAdmin);
+
+/**
+ * @openapi
+ * /api/admin/users/{id}:
+ *   delete:
+ *     summary: Delete a user (Admin only)
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Mongo _id of the user to be deleted
+ *     responses:
+ *       200:
+ *         description: User successfully deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "User successfully deleted"
+ *       400:
+ *         description: Bad request (e.g., attempt to delete yourself)
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       403:
+ *         description: Forbidden (user is not an admin)
+ *       404:
+ *         description: User not found
+ */
+router.delete('/users/:id', protect, isAdmin, deleteUserAdmin);
 
 /**
  * @openapi
