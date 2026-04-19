@@ -75,28 +75,31 @@ export const updateStats = async (req, res) => {
 
     if (type === 'unit') {
       const total = data.totalQuestions || 20;
-      const passPercentage = (data.correctAnswers / total) * 100;
-      isPassed = passPercentage >= 80;
-
+      isPassed = (data.correctAnswers / total) * 100 >= 80;
       user.statistics.unitsPassed.push({
-        ...data,
-        isPassed,
+        unitId: data.unitId || "unknown",
+        correctAnswers: data.correctAnswers,
+        incorrectAnswers: data.incorrectAnswers,
         totalQuestions: total,
+        timeSpent: data.timeSpent || 0,
+        isPassed,
+        date: new Date()
       });
-    } else if (type === 'random') {
+    } else if (type === 'random' || type === 'exam') {
       isPassed = data.incorrectAnswers <= 2;
-      user.statistics.randomTests.push({ ...data, isPassed });
+      user.statistics.randomTests.push({
+        score: data.correctAnswers,
+        total: data.totalQuestions || 20,
+        incorrectAnswers: data.incorrectAnswers,
+        timeSpent: data.timeSpent || 0,
+        date: new Date()
+      });
     } else {
       return res.status(400).json({ error: 'Невірний тип статистики' });
     }
 
     await user.save();
-
-    res.json({
-      message: 'Статистику оновлено',
-      isPassed,
-      latestResult: isPassed ? 'Passed' : 'Failed',
-    });
+    res.json({ message: 'Статистику оновлено', isPassed });
   } catch (err) {
     res.status(500).json({ error: 'Помилка сервера: ' + err.message });
   }
