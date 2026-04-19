@@ -10,8 +10,16 @@ export const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
+
+      // ДЕБАГ: у логах Render, чи не undefined
+      if (!process.env.JWT_SECRET) {
+        console.error('КРИТИЧНО: process.env.JWT_SECRET не знайдено!');
+      }
+
+      // Верифікація токена
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+      // Пошук користувача
       req.user = await User.findById(decoded.id).select('-password');
 
       if (!req.user) {
@@ -20,7 +28,9 @@ export const protect = async (req, res, next) => {
 
       return next();
     } catch (err) {
-      console.error('JWT Error:', err.message);
+      // Виводимо конкретну помилку в консоль Render
+      console.error('JWT Verification Error:', err.message);
+
       return res
         .status(401)
         .json({ error: 'Не авторизовано, токен недійсний' });
