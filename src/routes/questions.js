@@ -4,6 +4,7 @@ import {
   getRandomTest,
   getQuestionsByUnit,
   updateQuestion,
+  deleteQuestion,
 } from '../controllers/questionsController.js';
 import { uploadQuestionsPhotos } from '../middleware/uploadMiddleware.js';
 import { protect } from '../middleware/authMiddleware.js';
@@ -112,4 +113,32 @@ router.get('/test', getRandomTest);
  */
 router.get('/search-by-unit', getQuestionsByUnit);
 
+/**
+ * @openapi
+ * /api/questions/{id}:
+ *   delete:
+ *     summary: Delete a question (Admin only)
+ *     tags: [Questions]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Mongo _id of the question
+ *     responses:
+ *       200:
+ *         description: Question successfully deleted
+ *       401:
+ *         description: Unauthorized (missing or invalid token)
+ *       403:
+ *         description: Forbidden (admin only)
+ *       404:
+ *         description: Question not found
+ */
+router.delete('/:id', protect, isAdmin, deleteQuestion);
+
 export default router;
+

@@ -61,7 +61,7 @@ router.post('/login', login);
  * /api/users/update-stats:
  *   post:
  *     summary: Update user test statistics
- *     tags: [User]
+ *     tags: [Users]
  *     security:
  *       - bearerAuth: []
  *     requestBody:

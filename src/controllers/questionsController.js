@@ -110,3 +110,19 @@ export const updateQuestion = async (req, res) => {
     res.status(500).json({ error: 'Помилка оновлення: ' + err.message });
   }
 };
+
+export const deleteQuestion = async (req, res) => {
+  try {
+    const { id } = req.params; // Це Mongo _id
+
+    const deletedQuestion = await Question.findByIdAndDelete(id);
+
+    if (!deletedQuestion) {
+      return res.status(404).json({ error: 'Питання не знайдено' });
+    }
+
+    res.json({ message: 'Питання успішно видалено' });
+  } catch (err) {
+    res.status(500).json({ error: 'Помилка при видаленні: ' + err.message });
+  }
+};
