@@ -26,6 +26,7 @@ const userSchema = new mongoose.Schema(
           totalQuestions: { type: Number, required: true },
           timeSpent: { type: Number, default: 0 }, // в секундах
           isPassed: { type: Boolean, default: false },
+          mistakes: [{ type: String }],
           date: { type: Date, default: Date.now },
         },
       ],
@@ -35,6 +36,7 @@ const userSchema = new mongoose.Schema(
           total: { type: Number, default: 20 },
           incorrectAnswers: { type: Number, default: 0 },
           timeSpent: { type: Number, default: 0 },
+          mistakes: [{ type: String }],
           date: { type: Date, default: Date.now },
         },
       ],
