@@ -126,3 +126,21 @@ export const deleteQuestion = async (req, res) => {
     res.status(500).json({ error: 'Помилка при видаленні: ' + err.message });
   }
 };
+
+export const getQuestionsByIds = async (req, res) => {
+  try {
+    const { ids } = req.body;
+
+    if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ error: 'Надайте масив ID питань' });
+    }
+
+    const questions = await Question.find({ id: { $in: ids } });
+
+    const formatted = formatQuestionsWithImages(req, questions);
+
+    res.json(formatted);
+  } catch (err) {
+    res.status(500).json({ error: 'Помилка сервера: ' + err.message });
+  }
+};

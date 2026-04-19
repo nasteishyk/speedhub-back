@@ -5,6 +5,7 @@ import {
   getQuestionsByUnit,
   updateQuestion,
   deleteQuestion,
+  getQuestionsByIds,
 } from '../controllers/questionsController.js';
 import { uploadQuestionsPhotos } from '../middleware/uploadMiddleware.js';
 import { protect } from '../middleware/authMiddleware.js';
@@ -82,6 +83,45 @@ router.put('/:id', protect, isAdmin, uploadQuestionsPhotos, updateQuestion);
  *         description: Success
  */
 router.get('/', getAllQuestions);
+
+/**
+ * @openapi
+ * /api/questions/get-by-ids:
+ *   post:
+ *     summary: Get questions by their custom IDs
+ *     description: Accepts an array of custom IDs (e.g., ['r1q1', 'r1q2']) and returns full question objects. Used for the "mistakes review" mode.
+ *     tags: [Questions]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - ids
+ *             properties:
+ *               ids:
+ *                 type: array
+ *                 description: Array of question custom IDs (customId field in DB)
+ *                 items:
+ *                   type: string
+ *           example:
+ *             ids: ["r1q4", "r1q10", "r2q5"]
+ *     responses:
+ *       200:
+ *         description: List of found questions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Question'
+ *       400:
+ *         description: Invalid input format (ids array is required)
+ *       500:
+ *         description: Server error
+ */
+router.post('/get-by-ids', getQuestionsByIds);
 
 /**
  * @openapi
